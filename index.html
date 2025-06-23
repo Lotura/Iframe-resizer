@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>PRUEBA IFRAME</title>
+</head>
+<body>
+<div>
+	<iframe id="mi_iframe" src="https://www.centrodedocumentacionimserso.es/es/legislacion" width="100%" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
+</div>
+
+<script src="jquery.min.js"></script>
+<script src="iframeResizer.contentWindow.min.js"></script>
+<script src="iframeResizer.min.js"></script> 
+<script>
+// Variable global para guardar la altura original del iframe
+var oldHeight;
+
+// Inicializa el plugin iFrameResize
+iFrameResize({
+    // Permite que el iframe utilice métodos públicos (como enviar mensajes al padre)
+    enablePublicMethods: true,
+
+    // Función que se ejecuta cada vez que se recibe un mensaje del iframe
+    messageCallback: function (messageData) {
+        // Si el mensaje recibido es "abrir"
+        if (messageData.message == "abrir") {
+            // Baja el z-index de los elementos con clase "mover"
+            $(".mover").css("z-index", -1);
+            // Eleva el z-index del iframe para que quede visible encima
+            $("iframe").css("z-index", 3);
+        }
+        // Si el mensaje es "cerrar"
+        else if (messageData.message == "cerrar") {
+            // Restaura el z-index de los elementos
+            $(".mover").css("z-index", 1);
+            $("iframe").css("z-index", 0);
+        }
+        // Si el mensaje es "recuperar"
+        else if (messageData.message == "recuperar") {
+            // Restaura la altura original del iframe
+            $("#mi_iframe").css("height", oldHeight);
+        }
+        // Si el mensaje recibido es un número (indica cambio de altura)
+        else if (!isNaN(messageData.message)) {
+            // Suma el valor recibido a la altura actual del iframe
+            var newHeight = $("#mi_iframe").height() + messageData.message;
+            $("#mi_iframe").css("height", newHeight);
+        }
+        // Si el mensaje contiene un símbolo "#" (indica que hay que cambiar la URL)
+        else if (messageData.message.match("#")) {
+            // Se obtiene la URL actual sin parámetros
+            url_actual = window.location.href.slice(0, window.location.href.indexOf("?"));
+
+            // Ajusta la acción del formulario con ID "buscar"
+            $("#buscar").attr("action", url_actual + "/");
+
+            // Separa la URL por el símbolo "#"
+            var url = messageData.message.split("#");
+
+            // Limpia partes de la URL que coincidan con "Record/algún número"
+            url_actual = url_actual.replace(/Record\/[0-9]*/g, "");
+
+            // Construye la nueva URL reemplazando posibles errores de formato
+            var url_nueva = url_actual.substr(0, url_actual.length) + url[1];
+            url_nueva = url_nueva.replace(/\/\//g, "/");
+            url_nueva = url_nueva.replace(/https:/g, "https:/");
+
+            // Actualiza la URL mostrada en el navegador sin recargar la página
+            window.history.pushState(null, null, url_nueva);
+        }
+    },
+
+    // Función que se ejecuta cada vez que el iframe cambia de tamaño
+    resizedCallback: function () {
+        // Oculta el elemento de precarga
+        $(".precarga").css("display", "none");
+
+        // Guarda la altura actual del iframe para posibles restauraciones
+        oldHeight = $("#mi_iframe").height();
+    },
+});
+
+</script>
+
+</body>
+</html>
